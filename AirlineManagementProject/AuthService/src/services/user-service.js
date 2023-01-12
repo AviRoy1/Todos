@@ -18,6 +18,40 @@ class UserService {
         }
     }
 
+    async sighIn(email,plainPassword) {
+        try { 
+            const user = await this.userRepository.getByEmail(email);
+            const comp = this.checkPassword(plainPassword,user.password);
+            if(!comp) {
+                console.log("Password doesn't match");
+                throw {error: 'Incorrect password'};
+            }
+            const newJWT = this.createToken({email:user.email, id: user.id});
+            return newJWT;
+            
+        } catch (error) {
+            console.log("Something went wrong in sign in process");
+            throw error;
+        }
+    }
+
+    async isAuthenticated(token) {
+        try {
+            const response = this.verifyToken(token);
+            if(!response) {
+                throw {error: 'Invalid token'};
+            }
+            const user = await this.userRepository.getById(response.id);
+            if(!user) {
+                throw {error: "No user corresponding token exists"};
+            }
+            return user.id;
+        } catch (error) {
+            console.log("Something went wrong in auth process");
+            throw error;
+        }
+    }
+
     createToken(user) {
         try {
             const result = jwt.sign(user, JWT_KEY, {expiresIn: '1h'});
